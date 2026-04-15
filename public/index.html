@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnkaSecure POC — Bug Agent Demo</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3a;
+      --text: #e1e4ed;
+      --text-dim: #8b8fa3;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --danger: #ef4444;
+      --danger-hover: #f87171;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --info: #3b82f6;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    header .logo {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    header h1 {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    header .badge {
+      background: var(--danger);
+      color: white;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      transition: border-color 0.2s;
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+    }
+
+    .card h3 {
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card .tag {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .tag-error { background: #ef44441a; color: var(--danger); }
+    .tag-fatal { background: #ef44441a; color: #f87171; }
+    .tag-warning { background: #f59e0b1a; color: var(--warning); }
+
+    .card p {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+    .btn-danger:hover { background: var(--danger-hover); }
+    .btn-danger:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .custom-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .custom-section .row {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .custom-section input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .custom-section input:focus {
+      border-color: var(--accent);
+    }
+
+    .custom-section .btn {
+      width: auto;
+      background: var(--accent);
+      color: white;
+    }
+    .custom-section .btn:hover { background: var(--accent-hover); }
+
+    .log-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .log-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .log-header h3 { font-size: 0.9rem; }
+
+    .log-clear {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .log-clear:hover { border-color: var(--text-dim); }
+
+    .log-body {
+      padding: 1rem 1.25rem;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.82rem;
+      line-height: 1.8;
+    }
+
+    .log-entry {
+      display: flex;
+      gap: 1rem;
+      padding: 2px 0;
+    }
+
+    .log-time { color: var(--text-dim); white-space: nowrap; }
+    .log-msg { flex: 1; }
+    .log-status { white-space: nowrap; }
+
+    .log-entry.success .log-status { color: var(--success); }
+    .log-entry.error .log-status { color: var(--danger); }
+    .log-entry.info .log-status { color: var(--info); }
+    .log-entry.pending .log-status { color: var(--warning); }
+
+    .empty-log {
+      color: var(--text-dim);
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .stats {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      flex: 1;
+      text-align: center;
+    }
+
+    .stat .number {
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    .stat .label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-top: 0.25rem;
+    }
+
+    .stat.sent .number { color: var(--danger); }
+    .stat.fixed .number { color: var(--success); }
+    .stat.pending .number { color: var(--warning); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">A</div>
+  <h1>AnkaSecure — Bug Agent POC</h1>
+  <span class="badge">DEMO</span>
+</header>
+
+<div class="container">
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat sent">
+      <div class="number" id="stat-sent">0</div>
+      <div class="label">Errores enviados</div>
+    </div>
+    <div class="stat fixed">
+      <div class="number" id="stat-fixed">0</div>
+      <div class="label">Fixes aplicados</div>
+    </div>
+    <div class="stat pending">
+      <div class="number" id="stat-pending">0</div>
+      <div class="label">En proceso</div>
+    </div>
+  </div>
+
+  <!-- Frontend errors -->
+  <div class="section-title">Errores de Frontend (React)</div>
+  <div class="grid">
+    <div class="card">
+      <h3>TypeError <span class="tag tag-error">error</span></h3>
+      <p>Cannot read properties of null (reading 'name')</p>
+      <button class="btn btn-danger" onclick="triggerBug('frontend-null')">
+        Disparar error
+      </button>
+    </div>
+    <div class="card">
+      <h3>ReferenceError <span class="tag tag-error">error</span></h3>
+      <p>cryptoEngine is not defined</p>
+      <button class="btn btn-danger" onclick="triggerBug('frontend-reference')">
+        Disparar error
+      </button>
+    </div>
+    <div class="card">
+      <h3>Auth Error <span class="tag tag-error">error</span></h3>
+      <p>Cannot read properties of undefined (split)</p>
+      <button class="btn btn-danger" onclick="triggerBug('frontend-auth')">
+        Disparar error
+      </button>
+    </div>
+  </div>
+
+  <!-- Backend errors -->
+  <div class="section-title">Errores de Backend (Java/Spring Boot simulado)</div>
+  <div class="grid">
+    <div class="card">
+      <h3>NullPointerException <span class="tag tag-error">error</span></h3>
+      <p>dbPool.acquire() — pool no inicializado</p>
+      <button class="btn btn-danger" onclick="triggerBug('backend-db')">
+        Disparar error
+      </button>
+    </div>
+    <div class="card">
+      <h3>ConstraintViolation <span class="tag tag-fatal">fatal</span></h3>
+      <p>Duplicate key alias: master-key</p>
+      <button class="btn btn-danger" onclick="triggerBug('backend-duplicate')">
+        Disparar error
+      </button>
+    </div>
+  </div>
+
+  <!-- Custom error -->
+  <div class="section-title">Error personalizado</div>
+  <div class="custom-section">
+    <div class="row">
+      <input type="text" id="custom-error" placeholder="Escribe un mensaje de error personalizado...">
+      <button class="btn" onclick="triggerBug('custom')">Enviar</button>
+    </div>
+  </div>
+
+  <!-- Log panel -->
+  <div class="section-title">Log del ciclo</div>
+  <div class="log-panel">
+    <div class="log-header">
+      <h3>Eventos en tiempo real</h3>
+      <button class="log-clear" onclick="clearLog()">Limpiar</button>
+    </div>
+    <div class="log-body" id="log-body">
+      <div class="empty-log">Presiona un boton para disparar un error y ver el ciclo completo</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const API_BASE = window.location.origin
+  let statSent = 0, statFixed = 0, statPending = 0
+
+  const bugEndpoints = {
+    'frontend-null':      { method: 'GET',  path: '/api/v1/certificates/cert-999/details' },
+    'frontend-reference': { method: 'POST', path: '/api/v1/encrypt', body: { data: 'test', keyId: 'key-001' } },
+    'frontend-auth':      { method: 'GET',  path: '/api/v1/auth/validate' },
+    'backend-db':         { method: 'GET',  path: '/api/v1/tenants' },
+    'backend-duplicate':  { method: 'POST', path: '/api/v1/keys/import', body: { alias: 'master-key' } },
+  }
+
+  function updateStats() {
+    document.getElementById('stat-sent').textContent = statSent
+    document.getElementById('stat-fixed').textContent = statFixed
+    document.getElementById('stat-pending').textContent = statPending
+  }
+
+  function addLog(message, status = 'info') {
+    const logBody = document.getElementById('log-body')
+    const empty = logBody.querySelector('.empty-log')
+    if (empty) empty.remove()
+
+    const time = new Date().toLocaleTimeString('es-CO', { hour12: false })
+    const statusIcons = {
+      success: 'OK',
+      error:   'ERR',
+      info:    '>>',
+      pending: '...',
+    }
+
+    const entry = document.createElement('div')
+    entry.className = `log-entry ${status}`
+    entry.innerHTML = `
+      <span class="log-time">${time}</span>
+      <span class="log-msg">${message}</span>
+      <span class="log-status">${statusIcons[status] || ''}</span>
+    `
+    logBody.appendChild(entry)
+    logBody.scrollTop = logBody.scrollHeight
+  }
+
+  function clearLog() {
+    document.getElementById('log-body').innerHTML =
+      '<div class="empty-log">Presiona un boton para disparar un error y ver el ciclo completo</div>'
+  }
+
+  async function triggerBug(bugType) {
+    if (bugType === 'custom') {
+      const input = document.getElementById('custom-error')
+      const message = input.value.trim()
+      if (!message) return
+      addLog(`Enviando error personalizado: "${message}"`, 'pending')
+      input.value = ''
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/encrypt`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: message, keyId: 'custom' }),
+        })
+        const data = await res.json()
+        statSent++
+        statPending++
+        updateStats()
+        addLog(`Error enviado a Sentry — ${data.error || 'custom error'}`, 'success')
+        addLog('Esperando webhook de Sentry al trigger server...', 'pending')
+      } catch (e) {
+        addLog(`Error de red: ${e.message}`, 'error')
+      }
+      return
+    }
+
+    const bug = bugEndpoints[bugType]
+    if (!bug) return
+
+    addLog(`Disparando: ${bugType} — ${bug.method} ${bug.path}`, 'pending')
+
+    try {
+      const opts = { method: bug.method, headers: {} }
+      if (bug.body) {
+        opts.headers['Content-Type'] = 'application/json'
+        opts.body = JSON.stringify(bug.body)
+      }
+
+      const res = await fetch(`${API_BASE}${bug.path}`, opts)
+      const data = await res.json()
+
+      statSent++
+      statPending++
+      updateStats()
+
+      if (res.ok) {
+        addLog(`Respuesta OK inesperada — el bug fue corregido?`, 'info')
+      } else {
+        addLog(`Error capturado: ${data.error}`, 'success')
+        addLog('Sentry SDK reporta el error automaticamente', 'success')
+        addLog('Esperando webhook de Sentry al trigger server...', 'pending')
+      }
+    } catch (e) {
+      statSent++
+      statPending++
+      updateStats()
+      addLog(`Error de red: ${e.message}`, 'error')
+    }
+  }
+</script>
+
+</body>
+</html>
