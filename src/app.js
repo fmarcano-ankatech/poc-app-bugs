@@ -116,8 +116,11 @@ app.post('/api/v1/encrypt', (req, res) => {
 // ── BUG 3: Error de conexion a DB ──
 // Simula: pool de PostgreSQL no puede adquirir conexion
 app.get('/api/v1/tenants', (req, res) => {
-  const dbPool = null  // BUG: pool no inicializado
-  const connection = dbPool.acquire()  // TypeError: Cannot read properties of null
+  const dbPool = null
+  if (!dbPool) {
+    return res.status(503).json({ error: 'Database connection pool not available' })
+  }
+  const connection = dbPool.acquire()
   res.json({ data: connection.query('SELECT * FROM tenants') })
 })
 
