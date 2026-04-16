@@ -116,7 +116,10 @@ app.get('/api/v1/certificates/:id/details', (req, res) => {
 // Simula: modulo de cifrado PQC referencia variable que no fue importada
 app.post('/api/v1/encrypt', (req, res) => {
   const { data, keyId } = req.body
-  const encrypted = cryptoEngine.encrypt(data, keyId)  // BUG: cryptoEngine is not defined
+  if (!data || !keyId) {
+    return res.status(400).json({ error: 'data and keyId are required' })
+  }
+  const encrypted = Buffer.from(String(data)).toString('base64')
   res.json({ data: { encrypted, keyId } })
 })
 
@@ -132,9 +135,19 @@ app.get('/api/v1/tenants', (req, res) => {
 // Simula: JWT parser falla por token malformado
 app.get('/api/v1/auth/validate', (req, res) => {
   const token = req.headers.authorization
-  const parts = token.split(' ')  // BUG: token puede ser undefined -> TypeError
-  const decoded = JSON.parse(atob(parts[1]))
-  res.json({ data: { valid: true, user: decoded } })
+  if (!token) {
+    return res.status(401).json({ error: 'Authorization header is required' })
+  }
+  const parts = token.split(' ')
+  if (parts.length < 2) {
+    return res.status(401).json({ error: 'Malformed authorization header' })
+  }
+  try {
+    const decoded = JSON.parse(atob(parts[1]))
+    res.json({ data: { valid: true, user: decoded } })
+  } catch (_err) {
+    res.status(401).json({ error: 'Invalid token' })
+  }
 })
 
 // ── BUG 5: Error de constraint / duplicado ──
@@ -145,8 +158,7 @@ app.post('/api/v1/keys/import', (req, res) => {
 
   const { alias } = req.body
   if (keys.has(alias)) {
-    // BUG: lanza error no manejado en vez de responder 409
-    throw new Error(`Duplicate key alias: ${alias}. Constraint violation on (tenant_id, key_alias)`)
+    return res.status(409).json({ error: `Duplicate key alias: ${alias}. Constraint violation on (tenant_id, key_alias)` })
   }
   keys.set(alias, { id: `key-${Date.now()}`, algorithm: 'DILITHIUM3' })
   res.status(201).json({ data: { alias, status: 'imported' } })
