@@ -125,9 +125,19 @@ app.get('/api/v1/tenants', (req, res) => {
 // Simula: JWT parser falla por token malformado
 app.get('/api/v1/auth/validate', (req, res) => {
   const token = req.headers.authorization
-  const parts = token.split(' ')  // BUG: token puede ser undefined -> TypeError
-  const decoded = JSON.parse(atob(parts[1]))
-  res.json({ data: { valid: true, user: decoded } })
+  if (!token) {
+    return res.status(401).json({ error: 'Authorization header is required' })
+  }
+  const parts = token.split(' ')
+  if (parts.length < 2) {
+    return res.status(401).json({ error: 'Malformed authorization header' })
+  }
+  try {
+    const decoded = JSON.parse(atob(parts[1]))
+    res.json({ data: { valid: true, user: decoded } })
+  } catch (_err) {
+    res.status(401).json({ error: 'Invalid token' })
+  }
 })
 
 // ── BUG 5: Error de constraint / duplicado ──
