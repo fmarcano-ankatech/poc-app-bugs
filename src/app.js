@@ -1,3 +1,4 @@
+import './instrument.js'
 import express from 'express'
 import * as Sentry from '@sentry/node'
 import path from 'path'
@@ -5,15 +6,17 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// ── Sentry SDK ──
-Sentry.init({
-  dsn: process.env.SENTRY_DSN || '',
-  environment: process.env.NODE_ENV || 'development',
-  tracesSampleRate: 1.0,
-})
-
 const app = express()
 app.use(express.json())
+
+// ── CORS — permitir dashboard de control (:3000) ──
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  if (req.method === 'OPTIONS') return res.sendStatus(200)
+  next()
+})
 
 // ── Servir frontend ──
 app.use(express.static(path.join(__dirname, '..', 'public')))
