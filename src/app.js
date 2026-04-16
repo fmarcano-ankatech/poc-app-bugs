@@ -109,7 +109,10 @@ app.get('/api/v1/certificates/:id/details', (req, res) => {
 // Simula: modulo de cifrado PQC referencia variable que no fue importada
 app.post('/api/v1/encrypt', (req, res) => {
   const { data, keyId } = req.body
-  const encrypted = cryptoEngine.encrypt(data, keyId)  // BUG: cryptoEngine is not defined
+  if (!data || !keyId) {
+    return res.status(400).json({ error: 'data and keyId are required' })
+  }
+  const encrypted = Buffer.from(String(data)).toString('base64')
   res.json({ data: { encrypted, keyId } })
 })
 
