@@ -125,7 +125,10 @@ app.get('/api/v1/tenants', (req, res) => {
 // Simula: JWT parser falla por token malformado
 app.get('/api/v1/auth/validate', (req, res) => {
   const token = req.headers.authorization
-  const parts = token.split(' ')  // BUG: token puede ser undefined -> TypeError
+  if (!token) {
+    return res.status(401).json({ error: 'Authorization header is required' })
+  }
+  const parts = token.split(' ')
   const decoded = JSON.parse(atob(parts[1]))
   res.json({ data: { valid: true, user: decoded } })
 })
