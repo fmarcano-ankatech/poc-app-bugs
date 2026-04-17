@@ -100,9 +100,17 @@ app.post('/api/v1/verify', (req, res) => {
 // ── BUG 1: TypeError — null reference ──
 // Simula: dashboard React intenta mostrar detalle de certificado que no existe
 app.get('/api/v1/certificates/:id/details', (req, res) => {
-  const cert = null  // BUG: deberia buscar el certificado por id
+  const certificates = {
+    'cert-001': { name: 'Root CA', algorithm: 'DILITHIUM3', expiresAt: '2027-01-15' },
+    'cert-002': { name: 'Intermediate CA', algorithm: 'FALCON512', expiresAt: '2026-12-01' },
+    'cert-003': { name: 'Server TLS', algorithm: 'SPHINCS+', expiresAt: '2025-06-30' },
+  }
+  const cert = certificates[req.params.id] || null
+  if (!cert) {
+    return res.status(404).json({ error: 'Certificate not found' })
+  }
   res.json({
-    name: cert.name,               // TypeError: Cannot read properties of null
+    name: cert.name,
     algorithm: cert.algorithm,
     expiresAt: cert.expiresAt,
   })
