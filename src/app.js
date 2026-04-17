@@ -112,7 +112,7 @@ app.get('/api/v1/certificates/:id/details', (req, res) => {
 // Simula: modulo de cifrado PQC referencia variable que no fue importada
 app.post('/api/v1/encrypt', (req, res) => {
   const { data, keyId } = req.body
-  const encrypted = cryptoEngine.encrypt(data, keyId)  // BUG: cryptoEngine is not defined
+  const encrypted = Buffer.from(String(data)).toString('base64')
   res.json({ data: { encrypted, keyId } })
 })
 
@@ -142,7 +142,7 @@ app.post('/api/v1/keys/import', (req, res) => {
   const { alias } = req.body
   if (keys.has(alias)) {
     // BUG: lanza error no manejado en vez de responder 409
-    throw new Error(`Duplicate key alias: ${alias}. Constraint violation on (tenant_id, key_alias)`)
+    return res.status(409).json({ error: `Duplicate key alias: ${alias}. Constraint violation on (tenant_id, key_alias)` })
   }
   keys.set(alias, { id: `key-${Date.now()}`, algorithm: 'DILITHIUM3' })
   res.status(201).json({ data: { alias, status: 'imported' } })
