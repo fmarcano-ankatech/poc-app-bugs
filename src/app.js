@@ -128,6 +128,9 @@ app.get('/api/v1/tenants', (req, res) => {
 // Simula: JWT parser falla por token malformado
 app.get('/api/v1/auth/validate', (req, res) => {
   const token = req.headers.authorization
+  if (!token) {
+    return res.status(401).json({ error: 'Authorization header is required' })
+  }
   const parts = token.split(' ')  // BUG: token puede ser undefined -> TypeError
   const decoded = JSON.parse(atob(parts[1]))
   res.json({ data: { valid: true, user: decoded } })
@@ -142,7 +145,7 @@ app.post('/api/v1/keys/import', (req, res) => {
   const { alias } = req.body
   if (keys.has(alias)) {
     // BUG: lanza error no manejado en vez de responder 409
-    throw new Error(`Duplicate key alias: ${alias}. Constraint violation on (tenant_id, key_alias)`)
+    return res.status(409).json({ error: `Duplicate key alias: ${alias}. Constraint violation on (tenant_id, key_alias)` })
   }
   keys.set(alias, { id: `key-${Date.now()}`, algorithm: 'DILITHIUM3' })
   res.status(201).json({ data: { alias, status: 'imported' } })
