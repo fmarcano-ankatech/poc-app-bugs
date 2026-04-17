@@ -144,7 +144,6 @@ app.post('/api/v1/keys/import', (req, res) => {
 
   const { alias } = req.body
   if (keys.has(alias)) {
-    // BUG: lanza error no manejado en vez de responder 409
     return res.status(409).json({ error: `Duplicate key alias: ${alias}. Constraint violation on (tenant_id, key_alias)` })
   }
   keys.set(alias, { id: `key-${Date.now()}`, algorithm: 'DILITHIUM3' })
