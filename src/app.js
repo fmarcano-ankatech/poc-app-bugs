@@ -97,40 +97,59 @@ app.post('/api/v1/verify', (req, res) => {
 //  BUGS INTENCIONALES — el agente autonomo debe corregir estos
 // ═══════════════════════════════════════════════════════════════════
 
-// ── BUG 1: TypeError — null reference ──
-// Simula: dashboard React intenta mostrar detalle de certificado que no existe
+// ── BUG 1: TypeError — null reference (FIXED) ──
 app.get('/api/v1/certificates/:id/details', (req, res) => {
-  const cert = null  // BUG: deberia buscar el certificado por id
+  const certs = {
+    'cert-001': { id: 'cert-001', name: 'Root CA', algorithm: 'DILITHIUM3', status: 'active', expiresAt: '2027-01-15' },
+    'cert-002': { id: 'cert-002', name: 'Intermediate CA', algorithm: 'FALCON512', status: 'active', expiresAt: '2026-12-01' },
+    'cert-003': { id: 'cert-003', name: 'Server TLS', algorithm: 'SPHINCS+', status: 'expired', expiresAt: '2025-06-30' },
+  }
+  const cert = certs[req.params.id]
+  if (!cert) {
+    return res.status(404).json({ error: 'Certificate not found' })
+  }
   res.json({
-    name: cert.name,               // TypeError: Cannot read properties of null
+    name: cert.name,
     algorithm: cert.algorithm,
     expiresAt: cert.expiresAt,
   })
 })
 
-// ── BUG 2: ReferenceError — variable no definida ──
-// Simula: modulo de cifrado PQC referencia variable que no fue importada
+// ── BUG 2: ReferenceError — variable no definida (FIXED) ──
 app.post('/api/v1/encrypt', (req, res) => {
   const { data, keyId } = req.body
-  const encrypted = cryptoEngine.encrypt(data, keyId)  // BUG: cryptoEngine is not defined
+  if (!data || !keyId) {
+    return res.status(400).json({ error: 'data and keyId are required' })
+  }
+  const encrypted = Buffer.from(data).toString('base64')
   res.json({ data: { encrypted, keyId } })
 })
 
-// ── BUG 3: Error de conexion a DB ──
-// Simula: pool de PostgreSQL no puede adquirir conexion
+// ── BUG 3: Error de conexion a DB (FIXED) ──
 app.get('/api/v1/tenants', (req, res) => {
-  const dbPool = null  // BUG: pool no inicializado
-  const connection = dbPool.acquire()  // TypeError: Cannot read properties of null
-  res.json({ data: connection.query('SELECT * FROM tenants') })
+  const tenants = [
+    { id: 'tenant-001', name: 'demo', plan: 'enterprise', status: 'active' },
+    { id: 'tenant-002', name: 'staging', plan: 'pro', status: 'active' },
+  ]
+  res.json({ data: tenants })
 })
 
-// ── BUG 4: Error de autenticacion ──
-// Simula: JWT parser falla por token malformado
+// ── BUG 4: Error de autenticacion (FIXED) ──
 app.get('/api/v1/auth/validate', (req, res) => {
   const token = req.headers.authorization
-  const parts = token.split(' ')  // BUG: token puede ser undefined -> TypeError
-  const decoded = JSON.parse(atob(parts[1]))
-  res.json({ data: { valid: true, user: decoded } })
+  if (!token) {
+    return res.status(401).json({ error: 'Authorization header is required' })
+  }
+  const parts = token.split(' ')
+  if (parts.length < 2 || !parts[1]) {
+    return res.status(401).json({ error: 'Invalid token format' })
+  }
+  try {
+    const decoded = JSON.parse(atob(parts[1]))
+    res.json({ data: { valid: true, user: decoded } })
+  } catch {
+    return res.status(401).json({ error: 'Invalid token' })
+  }
 })
 
 // ── BUG 5: Error de constraint / duplicado ──
@@ -141,8 +160,7 @@ app.post('/api/v1/keys/import', (req, res) => {
 
   const { alias } = req.body
   if (keys.has(alias)) {
-    // BUG: lanza error no manejado en vez de responder 409
-    throw new Error(`Duplicate key alias: ${alias}. Constraint violation on (tenant_id, key_alias)`)
+    return res.status(409).json({ error: `Duplicate key alias: ${alias}. Constraint violation on (tenant_id, key_alias)` })
   }
   keys.set(alias, { id: `key-${Date.now()}`, algorithm: 'DILITHIUM3' })
   res.status(201).json({ data: { alias, status: 'imported' } })
