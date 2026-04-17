@@ -112,15 +112,18 @@ app.get('/api/v1/certificates/:id/details', (req, res) => {
 // Simula: modulo de cifrado PQC referencia variable que no fue importada
 app.post('/api/v1/encrypt', (req, res) => {
   const { data, keyId } = req.body
-  const encrypted = cryptoEngine.encrypt(data, keyId)  // BUG: cryptoEngine is not defined
+  const encrypted = Buffer.from(String(data)).toString('base64')
   res.json({ data: { encrypted, keyId } })
 })
 
 // ── BUG 3: Error de conexion a DB ──
 // Simula: pool de PostgreSQL no puede adquirir conexion
 app.get('/api/v1/tenants', (req, res) => {
-  const dbPool = null  // BUG: pool no inicializado
-  const connection = dbPool.acquire()  // TypeError: Cannot read properties of null
+  const dbPool = null // BUG: pool no inicializado
+  if (!dbPool) {
+    return res.status(503).json({ error: 'Database pool not initialized' })
+  }
+  const connection = dbPool.acquire()
   res.json({ data: connection.query('SELECT * FROM tenants') })
 })
 
@@ -128,6 +131,7 @@ app.get('/api/v1/tenants', (req, res) => {
 // Simula: JWT parser falla por token malformado
 app.get('/api/v1/auth/validate', (req, res) => {
   const token = req.headers.authorization
+  if (!token) return res.status(401).json({ error: 'Authorization header is required' })
   const parts = token.split(' ')  // BUG: token puede ser undefined -> TypeError
   const decoded = JSON.parse(atob(parts[1]))
   res.json({ data: { valid: true, user: decoded } })
