@@ -120,7 +120,10 @@ app.post('/api/v1/encrypt', (req, res) => {
 // Simula: pool de PostgreSQL no puede adquirir conexion
 app.get('/api/v1/tenants', (req, res) => {
   const dbPool = null  // BUG: pool no inicializado
-  const connection = dbPool.acquire()  // TypeError: Cannot read properties of null
+  if (!dbPool) {
+    return res.status(503).json({ error: 'Database pool not initialized' })
+  }
+  const connection = dbPool.acquire()
   res.json({ data: connection.query('SELECT * FROM tenants') })
 })
 
